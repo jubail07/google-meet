@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/auth/style.css">
+    <style>
+        body{
+            background: linear-gradient(to right, #205781, #4F959D);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="signup">
+        <form action="/signup" class="w-100 form" method="post">
+            <h1 style="text-align: center;">signup</h1>
+            <div class="row">
+                <div class="col-12 ">
+                    <div class="form-group">
+                        <label for="uname">Username:</label>
+                        <input oninput="lowerCase()" type="text" class="form-control" id="uname" placeholder="Enter username" name="username"
+                            required>
+                    </div>
+                </div>
+                <div class="col-12 " >
+                    <div class="form-group">
+                        <label for="pwd">Password:</label>
+                        <input type="password" class="form-control" id="pwd" placeholder="Enter password"
+                            name="password" required>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4 offset-md-3 offset-lg-4">
+                    <button class="custom-btn" type="submit">signup</button>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4 offset-md-3 offset-lg-4 d-flex align-items-center justify-content-center">
+                    <a href="/login">login</a>
+                </div>
+            </div>
+        </form>
+        <p style="color: red; text-align: center;">
+            <%= msg %>
+        </p>
+    </div>
+
+
+    <script>
+        function lowerCase(){
+            let input = document.getElementById('uname')
+            let inputValue = input.value
+            inputValue = inputValue.toLowerCase()
+            input.value = inputValue
+        }
+    </script>
+</body>
+
+</html>
