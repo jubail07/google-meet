@@ -35,7 +35,7 @@
                 <video id="remoteVideo" autoplay playsinline style="width: 300px; border: 1px solid black;"></video>
             </div>
             <p id="meeting-id" class="text-success mt-3"></p>
-
+            <button class="btn btn-danger mt-3" id="hangupBtn">Hang Up</button>
         </div>
     </div>
 
@@ -73,10 +73,18 @@
         }
 
         newMeetingBtn.onclick = async () => {
-            roomId = Math.random().toString(36).substring(2, 8);
-            await startLocalStream();
-            meetingIdDisplay.textContent = `Meeting ID: ${roomId}`;
-            joinRoom(roomId, true);
+            try {
+                roomId = Math.random().toString(36).substring(2, 8);
+                await startLocalStream();
+                meetingIdDisplay.textContent = `Meeting ID: ${roomId}`;
+                joinRoom(roomId, true);
+                console.log('abc')
+                document.getElementById('hangupBtn').style.display = 'block'
+                return
+            } catch (error) {
+                console.log(error, 'error in newMeeting')
+                return
+            }
         };
 
         joinBtn.onclick = async (e) => {
@@ -130,6 +138,28 @@
                 }
             });
         }
+
+        const hangupBtn = document.getElementById('hangupBtn');
+
+        hangupBtn.onclick = () => {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localVideo.srcObject = null;
+            }
+
+            remoteVideo.srcObject = null;
+            meetingIdDisplay.textContent = '';
+
+            // Optionally leave the room
+            socket.emit('leave', roomId);
+            document.getElementById('hangupBtn').style.display = 'none'
+        };
+
 
     </script>
 
