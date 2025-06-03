@@ -93,6 +93,7 @@
             if (!roomId) return alert('Please enter a valid meeting ID');
             await startLocalStream();
             joinRoom(roomId, false);
+            document.getElementById('hangupBtn').style.display = 'block'
         };
 
         function joinRoom(room, isCaller) {
