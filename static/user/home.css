@@ -56,6 +56,107 @@
     font-weight: 600;
 }
 
-#hangupBtn{
+#hangupBtn {
     display: none;
+}
+
+.logout {
+    padding: 10px 15px;
+    background-color: #3d69f9;
+    color: #fff;
+    font-weight: 600;
+    font-size: 12px;
+    border-radius: 10px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    text-decoration: none;
+}
+
+.meeting-container {
+    width: 100%;
+    height: 100vh;
+    background: black;
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.main-content {
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+.video-section {
+    width: 70%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.host-video {
+    height: 200px;
+    margin-right: 10px;
+}
+
+#localVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.participants {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    align-items: center;
+    justify-items: center;
+}
+
+.participants video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.chat-box {
+    width: 30%;
+    height: 100%;
+    border-radius: 10px;
+    background-color: #f1f1f1;
+    padding: 10px;
+    overflow-y: scroll;
+    scrollbar-width: none;
+}
+
+.cust-input {
+    width: 80%;
+    outline: none;
+    padding: 7px;
+}
+
+.cust-btn {
+    width: 18%;
+    border: none;
+    padding: 7px;
+    background-color: green;
+}
+
+#message {
+    width: 100%;
+    height: 90%;
+    color: black;
+    border-radius: 3%;
+    overflow-y: scroll;
+    scrollbar-width: none;
+    display: flex;
+    flex-direction: column;
 }
