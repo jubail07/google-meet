@@ -52,8 +52,9 @@
 .join {
     padding: 7px 10px;
     border: none;
-    border-radius: 20%;
+    border-radius: 10px;
     font-weight: 600;
+    background-color: rgba(18, 66, 18, 0.603);
 }
 
 #hangupBtn {
@@ -129,7 +130,7 @@
 
 .chat-box {
     width: 30%;
-    height: 100%;
+    height:100%;
     border-radius: 10px;
     background-color: #f1f1f1;
     padding: 10px;
@@ -159,4 +160,63 @@
     scrollbar-width: none;
     display: flex;
     flex-direction: column;
+}
+
+.footer{
+    width: 70%;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+@media all and (max-width: 800px) {
+    .meet-div {
+        width: 90%;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .new-meeting,
+    .join-input,
+    .join {
+        width: 100%;
+    }
+
+    .main-content {
+        flex-direction: column;
+    }
+
+    .video-section {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .host-video {
+        height: auto;
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+
+    .participants {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .chat-box {
+        width: 100%;
+        height: 250px;
+        margin-top: 10px;
+    }
+
+    .cust-input {
+        width: 70%;
+    }
+
+    .cust-btn {
+        width: 28%;
+    }
+
+    .logout {
+        font-size: 10px;
+        padding: 8px 10px;
+    }
 }

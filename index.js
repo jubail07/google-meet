@@ -24,32 +24,6 @@ const userRoute = require('./routes/user');
 const socketController = require('./controller/socket');
 app.use('/', authRoute, userRoute);
 
-// 🔌 WebRTC Signaling with Socket.IO
-// io.on('connection', (socket) => {
-//     console.log(`Socket connected: ${socket.id}`);
-
-//     socket.on('join', (roomId) => {
-//         socket.join(roomId);
-//         socket.to(roomId).emit('user-joined');
-//     });
-
-//     socket.on('offer', (data) => {
-//         socket.to(data.room).emit('offer', data.offer);
-//     });
-
-//     socket.on('answer', (data) => {
-//         socket.to(data.room).emit('answer', data.answer);
-//     });
-
-//     socket.on('ice-candidate', (data) => {
-//         socket.to(data.room).emit('ice-candidate', data.candidate);
-//     });
-
-//     socket.on('disconnect', () => {
-//         console.log(`Socket disconnected: ${socket.id}`);
-//     });
-// });
-
 socketController(io)
 
 const port = process.env.PORT || 4000;

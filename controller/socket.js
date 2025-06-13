@@ -13,7 +13,9 @@ function socketController(io) {
             rooms[roomId].push(socket.id);
 
             const otherUsers = rooms[roomId].filter(id => id !== socket.id);
-            socket.emit('all-users', otherUsers);
+            socket.emit('all-users', otherUsers)
+            
+            socket.emit('screen-sharing', { room: roomId, isSharing: true })
 
             socket.to(roomId).emit('user-joined', socket.id);
 
@@ -30,6 +32,7 @@ function socketController(io) {
             })
 
             socket.on('disconnect', () => {
+                console.log('User disconnected')
                 if (rooms[roomId]) {
                     rooms[roomId] = rooms[roomId].filter(id => id !== socket.id);
                     socket.to(roomId).emit('user-left', socket.id);
@@ -40,12 +43,23 @@ function socketController(io) {
             })
         })
 
+        socket.on('leave', ({ room, id }) => {
+            socket.leave(room);
+
+            // Remove user from the room
+            if (rooms[room]) {
+                rooms[room] = rooms[room].filter(userId => userId !== id);
+                if (rooms[room].length === 0) {
+                    delete rooms[room];
+                }
+            }
+
+            socket.to(room).emit('user-left', id);
+        });
+
+
         socket.on('chat', (msg) => {
             io.emit('chat', msg)
-        })
-
-        socket.on('disconnect', () => {
-            console.log('User disconnected');
         })
     })
 }

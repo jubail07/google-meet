@@ -17,9 +17,9 @@
 <body>
 
     <div class="wrapper">
-        <h1>welcome <%= user %>
-        </h1>
         <div class="container w-100 h-100 d-flex flex-column justify-content-center align-items-center">
+            <h1 style="position: absolute; top: 0; left: 0;">welcome <%= user %>
+            </h1>
             <div class="text-div">
                 <h1>Video calls and meetings <br> for everyone</h1>
                 <h5 style="color: gray;">Connect, collaborate and celebrate from <br> anywhere with meet</h5>
@@ -49,8 +49,12 @@
                         </form>
                     </div>
                 </div>
-                <p id="meeting-id" class="text-success mt-3"></p>
-                <button class="btn btn-danger mt-3" id="hangupBtn">Hang Up</button>
+                <div class="footer">
+                    <p id="meeting-id" class="text-success mt-3"></p>
+                    <button class="btn btn-danger" id="hangupBtn">Hang Up</button>
+                    <button id="videoClose" class="btn btn-success">Video Close</button>
+                    <button id="screenShareBtn" class="btn btn-primary">Share Screen</button>
+                </div>
             </div>
 
         </div>
@@ -94,11 +98,10 @@
 
         newMeetingBtn.onclick = async () => {
             try {
-                roomId = Math.random().toString(36).substring(2, 8);
-                await startLocalStream();
-                meetingIdDisplay.textContent = `Meeting ID: ${roomId}`;
-                joinRoom(roomId, true);
-                console.log('abc')
+                roomId = Math.random().toString(36).substring(2, 8)
+                await startLocalStream()
+                meetingIdDisplay.textContent = `Meeting ID: ${roomId}`
+                joinRoom(roomId, true)
                 document.getElementById('hangupBtn').style.display = 'block'
                 document.querySelector('.meeting-container').style.display = 'flex'
                 return
@@ -113,7 +116,7 @@
             document.querySelector('.meeting-container').style.display = 'flex'
             e.preventDefault();
             roomId = joinInput.value.trim();
-            if (!roomId) return alert('Please enter a valid meeting ID');
+            if (!roomId) return alert('Please enter a valid meeting ID')
             await startLocalStream();
             joinRoom(roomId, false);
         };
@@ -123,8 +126,9 @@
             peerConnection = new RTCPeerConnection(servers);
 
             localStream.getTracks().forEach(track => {
+                const trackToAdd = isScreenSharing && track.kind === 'video' ? screenStream.getVideoTracks()[0] : track
                 peerConnection.addTrack(track, localStream);
-            });
+            })
 
             peerConnection.onicecandidate = (event) => {
                 if (event.candidate) {
@@ -197,7 +201,6 @@
             };
 
             pc.ontrack = (event) => {
-                const userId = event.streams[0].id;
                 let video = document.getElementById(userId);
                 if (!video) {
                     video = document.createElement('video');
@@ -224,16 +227,110 @@
 
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
-                const localVideo = document.getElementById('local');
-                if (localVideo) localVideo.remove()
+                const localVideo = document.getElementById('localVideo');
+                if (localVideo) localVideo.srcObject = null
             }
 
-            socket.emit('leave', roomId);
+            socket.emit('leave', { room: roomId, id: socket.id });
             meetingIdDisplay.textContent = '';
             hangupBtn.style.display = 'none';
             document.querySelector('.meeting-container').style.display = 'none'
             location.reload()
         };
+
+        const videoClose = document.getElementById('videoClose')
+
+        videoClose.onclick = () => {
+            if (!localStream) return
+
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (videoTrack) {
+                videoTrack.enabled = !videoTrack.enabled;
+                videoClose.textContent = videoTrack.enabled ? 'Video Close' : 'Video Open';
+
+                if (!videoTrack.enabled) {
+                    localVideo.srcObject = null;
+                } else {
+                    localVideo.srcObject = localStream;
+                }
+            }
+        }
+
+        const screenShareBtn = document.getElementById('screenShareBtn');
+        let isScreenSharing = false;
+        let screenStream;
+
+        // Handle screen sharing
+        screenShareBtn.onclick = async () => {
+            if (!isScreenSharing) {
+                try {
+                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                    const screenTrack = screenStream.getVideoTracks()[0];
+
+                    // Replace video track in each peer connection
+                    for (let id in peerConnections) {
+                        const sender = peerConnections[id]
+                            .getSenders()
+                            .find(s => s.track.kind === 'video');
+                        if (sender) sender.replaceTrack(screenTrack);
+                    }
+
+                    // Replace local video feed
+                    localVideo.srcObject = screenStream;
+
+                    // When user stops screen share manually
+                    screenTrack.onended = () => {
+                        stopScreenSharing();
+                    };
+
+                    isScreenSharing = true;
+                    screenShareBtn.textContent = 'Stop Sharing';
+
+                    function getCurrentVideoTrack() {
+                        if (isScreenSharing && screenStream) {
+                            return screenStream.getVideoTracks()[0];
+                        } else if (localStream) {
+                            return localStream.getVideoTracks()[0];
+                        }
+                        return null;
+                    }
+
+                } catch (err) {
+                    console.error('Error sharing screen:', err);
+                }
+            } else {
+                stopScreenSharing();
+            }
+        };
+
+        function stopScreenSharing() {
+            if (!screenStream) return;
+
+            const videoTrack = localStream.getVideoTracks()[0];
+
+            for (let id in peerConnections) {
+                const sender = peerConnections[id]
+                    .getSenders()
+                    .find(s => s.track.kind === 'video');
+                if (sender) sender.replaceTrack(videoTrack);
+            }
+
+            function getCurrentVideoTrack() {
+                if (isScreenSharing && screenStream) {
+                    return screenStream.getVideoTracks()[0];
+                } else if (localStream) {
+                    return localStream.getVideoTracks()[0];
+                }
+                return null;
+            }
+
+
+            localVideo.srcObject = localStream;
+            screenStream.getTracks().forEach(track => track.stop());
+            isScreenSharing = false;
+            screenShareBtn.textContent = 'Share Screen';
+        }
+
 
         form.addEventListener('submit', (i) => {
             i.preventDefault()
