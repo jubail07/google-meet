@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/user/home.css">
 </head>
 
@@ -18,15 +19,15 @@
 
     <div class="wrapper">
         <div class="container w-100 h-100 d-flex flex-column justify-content-center align-items-center">
-            <h1 style="position: absolute; top: 0; left: 0;">welcome <%= user %>
-            </h1>
+            <h5 style="position: absolute; top: 0; left: 0; color: #fff;">welcome <%= user %>
+            </h5>
             <div class="text-div">
-                <h1>Video calls and meetings <br> for everyone</h1>
+                <h1 style="color: aliceblue;">Video calls and meetings <br> for everyone</h1>
                 <h5 style="color: gray;">Connect, collaborate and celebrate from <br> anywhere with meet</h5>
             </div>
             <div class="meet-div">
                 <button class="new-meeting">New meeting</button>
-                <form action="#" style="width: 72%;">
+                <form action="#" style="width: 100%;">
                     <input type="text" class="join-input" placeholder="Enter a code or link">
                     <button type="submit" class="join">join</button>
                 </form>
@@ -39,21 +40,24 @@
                         </div>
                         <div class="participants" id="participantGrid"></div>
                     </div>
-                    <div class="chat-box mt-5">
-                        <div id="message">
-
-                        </div>
+                    <div class="chat-box d-none">
+                        <div id="message"></div>
                         <form id="chatForm">
                             <input class="cust-input" type="text" placeholder="message" required>
-                            <button class="cust-btn" type="submit">send</button>
+                            <button class="cust-btn" type="submit"><i class="bi bi-send"></i></button>
                         </form>
                     </div>
                 </div>
                 <div class="footer">
-                    <p id="meeting-id" class="text-success mt-3"></p>
-                    <button class="btn btn-danger" id="hangupBtn">Hang Up</button>
-                    <button id="videoClose" class="btn btn-success">Video Close</button>
-                    <button id="screenShareBtn" class="btn btn-primary">Share Screen</button>
+                    <p style="color: aliceblue; font-weight: 600;">
+                        <%=user%>
+                    </p>
+                    <p id="meeting-id"></p>
+                    <button id="hangupBtn"><i class="bi bi-telephone-x-fill"></i></button>
+                    <button id="videoClose"><i class="bi bi-camera-video-off"></i></button>
+                    <button id="mute"><i class="bi bi-mic-mute"></i></button>
+                    <button id="screenShareBtn"><i class="bi bi-cast"></i></button>
+                    <button id="toggleChatBtn"><i class="bi bi-chat-left-text"></i></button>
                 </div>
             </div>
 
@@ -71,287 +75,9 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
-
-        const localVideo = document.getElementById('localVideo')
-        const newMeetingBtn = document.querySelector('.new-meeting')
-        const joinInput = document.querySelector('.join-input')
-        const joinBtn = document.querySelector('.join')
-        const meetingIdDisplay = document.getElementById('meeting-id')
-        const form = document.getElementById('chatForm')
-        const input = document.querySelector('.cust-input')
-        const messageArea = document.getElementById('message')
-        const username = '<%= user %>'
-
-        let peerConnections = {}
-        let localStream
-        let roomId
-
-        const servers = {
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-        };
-
-        async function startLocalStream() {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            localVideo.srcObject = localStream;
-        }
-
-        newMeetingBtn.onclick = async () => {
-            try {
-                roomId = Math.random().toString(36).substring(2, 8)
-                await startLocalStream()
-                meetingIdDisplay.textContent = `Meeting ID: ${roomId}`
-                joinRoom(roomId, true)
-                document.getElementById('hangupBtn').style.display = 'block'
-                document.querySelector('.meeting-container').style.display = 'flex'
-                return
-            } catch (error) {
-                console.log(error, 'error in newMeeting')
-                return
-            }
-        };
-
-        joinBtn.onclick = async (e) => {
-            document.getElementById('hangupBtn').style.display = 'block'
-            document.querySelector('.meeting-container').style.display = 'flex'
-            e.preventDefault();
-            roomId = joinInput.value.trim();
-            if (!roomId) return alert('Please enter a valid meeting ID')
-            await startLocalStream();
-            joinRoom(roomId, false);
-        };
-
-        function joinRoom(room, isCaller) {
-            socket.emit('join', room);
-            peerConnection = new RTCPeerConnection(servers);
-
-            localStream.getTracks().forEach(track => {
-                const trackToAdd = isScreenSharing && track.kind === 'video' ? screenStream.getVideoTracks()[0] : track
-                peerConnection.addTrack(track, localStream);
-            })
-
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    socket.emit('ice-candidate', { room, candidate: event.candidate });
-                }
-            };
-
-            socket.on('all-users', async (users) => {
-                for (let userId of users) {
-                    const pc = createPeerConnection(userId);
-                    peerConnections[userId] = pc;
-
-                    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-                    const offer = await pc.createOffer();
-                    await pc.setLocalDescription(offer);
-
-                    socket.emit('offer', { to: userId, from: socket.id, offer });
-                }
-            })
-
-            socket.on('offer', async ({ from, offer }) => {
-                const pc = createPeerConnection(from);
-                peerConnections[from] = pc;
-
-                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-                await pc.setRemoteDescription(new RTCSessionDescription(offer));
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-
-                socket.emit('answer', { to: from, from: socket.id, answer });
-            })
-
-            socket.on('answer', async ({ from, answer }) => {
-                await peerConnections[from].setRemoteDescription(new RTCSessionDescription(answer));
-            })
-
-            socket.on('ice-candidate', async ({ from, candidate }) => {
-                try {
-                    await peerConnections[from].addIceCandidate(new RTCIceCandidate(candidate));
-                } catch (e) {
-                    console.error('Error adding received ICE candidate', e);
-                }
-            })
-
-            socket.on('user-left', (id) => {
-                if (peerConnections[id]) {
-                    peerConnections[id].close();
-                    delete peerConnections[id];
-                }
-                const video = document.getElementById(id);
-                if (video) {
-                    video.remove();
-                }
-            })
-        }
-
-        function createPeerConnection(userId) {
-            const pc = new RTCPeerConnection(servers);
-
-            pc.onicecandidate = (event) => {
-                if (event.candidate) {
-                    socket.emit('ice-candidate', {
-                        to: userId,
-                        from: socket.id,
-                        candidate: event.candidate
-                    });
-                }
-            };
-
-            pc.ontrack = (event) => {
-                let video = document.getElementById(userId);
-                if (!video) {
-                    video = document.createElement('video');
-                    video.id = userId;
-                    video.autoplay = true;
-                    video.playsInline = true;
-                    video.srcObject = event.streams[0];
-                    document.getElementById('participantGrid').appendChild(video);
-                }
-            };
-
-            return pc;
-        }
-
-        const hangupBtn = document.getElementById('hangupBtn');
-
-        hangupBtn.onclick = () => {
-            for (let id in peerConnections) {
-                peerConnections[id].close();
-                delete peerConnections[id];
-                const video = document.getElementById(id);
-                if (video) video.remove();
-            }
-
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                const localVideo = document.getElementById('localVideo');
-                if (localVideo) localVideo.srcObject = null
-            }
-
-            socket.emit('leave', { room: roomId, id: socket.id });
-            meetingIdDisplay.textContent = '';
-            hangupBtn.style.display = 'none';
-            document.querySelector('.meeting-container').style.display = 'none'
-            location.reload()
-        };
-
-        const videoClose = document.getElementById('videoClose')
-
-        videoClose.onclick = () => {
-            if (!localStream) return
-
-            const videoTrack = localStream.getVideoTracks()[0];
-            if (videoTrack) {
-                videoTrack.enabled = !videoTrack.enabled;
-                videoClose.textContent = videoTrack.enabled ? 'Video Close' : 'Video Open';
-
-                if (!videoTrack.enabled) {
-                    localVideo.srcObject = null;
-                } else {
-                    localVideo.srcObject = localStream;
-                }
-            }
-        }
-
-        const screenShareBtn = document.getElementById('screenShareBtn');
-        let isScreenSharing = false;
-        let screenStream;
-
-        // Handle screen sharing
-        screenShareBtn.onclick = async () => {
-            if (!isScreenSharing) {
-                try {
-                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-                    const screenTrack = screenStream.getVideoTracks()[0];
-
-                    // Replace video track in each peer connection
-                    for (let id in peerConnections) {
-                        const sender = peerConnections[id]
-                            .getSenders()
-                            .find(s => s.track.kind === 'video');
-                        if (sender) sender.replaceTrack(screenTrack);
-                    }
-
-                    // Replace local video feed
-                    localVideo.srcObject = screenStream;
-
-                    // When user stops screen share manually
-                    screenTrack.onended = () => {
-                        stopScreenSharing();
-                    };
-
-                    isScreenSharing = true;
-                    screenShareBtn.textContent = 'Stop Sharing';
-
-                    function getCurrentVideoTrack() {
-                        if (isScreenSharing && screenStream) {
-                            return screenStream.getVideoTracks()[0];
-                        } else if (localStream) {
-                            return localStream.getVideoTracks()[0];
-                        }
-                        return null;
-                    }
-
-                } catch (err) {
-                    console.error('Error sharing screen:', err);
-                }
-            } else {
-                stopScreenSharing();
-            }
-        };
-
-        function stopScreenSharing() {
-            if (!screenStream) return;
-
-            const videoTrack = localStream.getVideoTracks()[0];
-
-            for (let id in peerConnections) {
-                const sender = peerConnections[id]
-                    .getSenders()
-                    .find(s => s.track.kind === 'video');
-                if (sender) sender.replaceTrack(videoTrack);
-            }
-
-            function getCurrentVideoTrack() {
-                if (isScreenSharing && screenStream) {
-                    return screenStream.getVideoTracks()[0];
-                } else if (localStream) {
-                    return localStream.getVideoTracks()[0];
-                }
-                return null;
-            }
-
-
-            localVideo.srcObject = localStream;
-            screenStream.getTracks().forEach(track => track.stop());
-            isScreenSharing = false;
-            screenShareBtn.textContent = 'Share Screen';
-        }
-
-
-        form.addEventListener('submit', (i) => {
-            i.preventDefault()
-            const message = input.value.trim()
-            if (message) {
-                socket.emit('chat', {
-                    user: username,
-                    text: message
-                })
-                input.value = ''
-            }
-        })
-
-        socket.on('chat', (msg) => {
-            const p = document.createElement('p')
-            p.innerHTML = `<strong>${msg.user}:</strong> ${msg.text}`
-            messageArea.appendChild(p)
-            messageArea.scrollTop = messageArea.scrollHeight
-        })
-
+        window.username = '<%=user%>'
     </script>
+    <script src="user/home.js"></script>
 
 </body>
 
