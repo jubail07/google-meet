@@ -27,6 +27,7 @@ app.use('/', authRoute, userRoute);
 socketController(io)
 
 const port = process.env.PORT || 4000;
+// const hostname = '192.168.29.91'
 server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
-});
+})

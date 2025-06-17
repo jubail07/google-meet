@@ -8,7 +8,6 @@ const meetingIdDisplay = document.getElementById('meeting-id')
 const form = document.getElementById('chatForm')
 const input = document.querySelector('.cust-input')
 const messageArea = document.getElementById('message')
-// const username = '<%=user%>'
 
 let peerConnections = {}
 let localStream
@@ -19,6 +18,7 @@ const servers = {
 };
 
 async function startCamera() {
+    console.log(navigator)
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     localVideo.srcObject = localStream;
 }
@@ -163,29 +163,28 @@ hangupBtn.onclick = () => {
         const video = document.getElementById(id);
         if (video) video.remove();
     }
-    stopCamera()
+    // stopCamera()
 
     socket.emit('leave', { room: roomId, id: socket.id });
     meetingIdDisplay.textContent = '';
     hangupBtn.style.display = 'none';
     document.querySelector('.meeting-container').style.display = 'none'
     document.querySelector('.logout').style.display = 'block'
-};
+    location.reload()
+}
 
 const videoClose = document.getElementById('videoClose')
 let cameraOn = true
 
-videoClose.onclick = async () => {
-    if (cameraOn) {
-        stopCamera();
-        videoClose.innerHTML = '<i class="bi bi-camera-video-off"></i>';
-    } else {
-        await startCamera();
-        videoClose.innerHTML = '<i class="bi bi-camera-video"></i>';
-    }
-    cameraOn = !cameraOn;
-}
+videoClose.onclick = () => {
+    if (!localStream) return
 
+    const videoTrack = localStream.getVideoTracks()[0];
+    if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        videoClose.innerHTML = videoTrack.enabled ? '<i class="bi bi-camera-video-off"></i>' : '<i class="bi bi-camera-video"></i>';
+    }
+}
 
 const micMute = document.getElementById('mute')
 
@@ -236,7 +235,6 @@ screenShareBtn.onclick = async () => {
                 }
                 return null;
             }
-
         } catch (err) {
             console.error('Error sharing screen:', err);
         }

@@ -64,4 +64,4 @@ function socketController(io) {
     })
 }
 
-module.exports = socketController;
+module.exports = socketController
